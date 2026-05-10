@@ -8,16 +8,20 @@ from PIL import Image
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from cinema.models import Actor, CinemaHall, Genre, Movie, MovieSession
-from cinema.serializers import MovieDetailSerializer, MovieListSerializer
+from cinema.models import (
+    Actor,
+    CinemaHall,
+    Genre,
+    Movie,
+    MovieSession
+)
+from cinema.serializers import (
+    MovieDetailSerializer,
+    MovieListSerializer
+)
 
 MOVIE_URL = reverse("cinema:movie-list")
 MOVIE_SESSION_URL = reverse("cinema:moviesession-list")
-
-
-def movie_retrieve_url(movie_id: int):
-    return reverse("cinema:movie-detail", args=(movie_id,))
-
 
 def sample_movie(**params):
     defaults = {
@@ -92,7 +96,7 @@ class AuthorizedUser(TestCase):
         res = self.client.get(MOVIE_URL)
 
         self.assertEquals(res.status_code, status.HTTP_200_OK)
-        self.assertEquals(movie.data, *res.data["results"])
+        self.assertIn(movie.data, res.data["results"])
 
     def test_filter_movie_by_title(self):
         movie_1 = sample_movie(title="1 movie")
@@ -101,8 +105,6 @@ class AuthorizedUser(TestCase):
         res = self.client.get(MOVIE_URL, data={"title": "1"})
         serialize_movie_1 = MovieListSerializer(movie_1)
         serialize_movie_2 = MovieListSerializer(movie_2)
-
-        print(serialize_movie_1, serialize_movie_2)
 
         self.assertEquals(res.status_code, status.HTTP_200_OK)
         self.assertIn(serialize_movie_1.data, res.data["results"])
@@ -116,7 +118,7 @@ class AuthorizedUser(TestCase):
 
         movie_1.genres.add(genre_1)
 
-        res = self.client.get(MOVIE_URL, data={"genre": f"{genre_1.id}"})
+        res = self.client.get(MOVIE_URL, data={"genres": f"{genre_1.id}"})
         serialize_movie_1 = MovieListSerializer(movie_1)
         serialize_movie_2 = MovieListSerializer(movie_2)
 
@@ -132,7 +134,7 @@ class AuthorizedUser(TestCase):
 
         movie_1.actors.add(actor_1)
 
-        res = self.client.get(MOVIE_URL, data={"genre": f"{actor_1.id}"})
+        res = self.client.get(MOVIE_URL, data={"actors": f"{actor_1.id}"})
         serialize_movie_1 = MovieListSerializer(movie_1)
         serialize_movie_2 = MovieListSerializer(movie_2)
 
@@ -143,8 +145,7 @@ class AuthorizedUser(TestCase):
     def test_movie_retrieve(self):
         movie = sample_movie()
         serialize_movie = MovieDetailSerializer(movie)
-        print(movie_retrieve_url(movie.id))
-        res = self.client.get(movie_retrieve_url(movie.id))
+        res = self.client.get(detail_url(movie.id))
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(serialize_movie.data, res.data)
